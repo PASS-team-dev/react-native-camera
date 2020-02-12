@@ -48,7 +48,8 @@
 
 - (void)setType:(id)json queue:(dispatch_queue_t)sessionQueue 
 {
-  NSInteger requestedValue = [RCTConvert NSInteger:json];
+  // We want to set 2 types at the same time for general use
+  NSInteger requestedValue = FIRVisionBarcodeFormatEAN13 | FIRVisionBarcodeFormatEAN8;
   if (self.setOption != requestedValue) {
       if (sessionQueue) {
           dispatch_async(sessionQueue, ^{
