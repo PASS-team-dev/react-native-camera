@@ -1497,10 +1497,8 @@ BOOL _sessionInterrupted = NO;
 - (void)updateSessionPreset:(AVCaptureSessionPreset)preset
 {
 #if !(TARGET_IPHONE_SIMULATOR)
-    if (self.canDetectBarcodes) {
-        // Now AVCaptureSessionPresetPhoto is used for barcode detection, but it is deprecated.
-        preset = AVCaptureSessionPreset1920x1080;
-    }
+    // Do not use deprecated AVCaptureSessionPresetPhoto
+    preset = AVCaptureSessionPreset1920x1080;
     if ([preset integerValue] < 0) {
         return;
     }
