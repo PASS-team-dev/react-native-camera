@@ -126,10 +126,8 @@
     // scale down CIImage
     float bufferWidth = CVPixelBufferGetWidth(imageBuffer);
     float bufferHeight = CVPixelBufferGetHeight(imageBuffer);
-    float scale = scale = bufferHeight>bufferWidth ? 720 / bufferWidth : 720 / bufferHeight;;
-    if (position == 1) {
-        scale = bufferHeight>bufferWidth ? 400 / bufferWidth : 400 / bufferHeight;
-    }
+    // don't scale down image!!!
+    float scale = 1.0f;
     CIFilter* scaleFilter = [CIFilter filterWithName:@"CILanczosScaleTransform"];
     [scaleFilter setValue:ciImage forKey:kCIInputImageKey];
     [scaleFilter setValue:@(scale) forKey:kCIInputScaleKey];
@@ -141,10 +139,13 @@
     CIContext *temporaryContext = [CIContext contextWithOptions:contextOptions];
     CGImageRef videoImage;
     CGRect boundingRect;
+    // crop image squarely
     if (curOrientation == UIInterfaceOrientationLandscapeLeft || curOrientation == UIInterfaceOrientationLandscapeRight) {
-        boundingRect = CGRectMake(0, 0, bufferWidth*scale, bufferHeight*scale);
+        int minSize = MIN(bufferWidth, bufferHeight);
+        boundingRect = CGRectMake((bufferWidth - minSize)/ 2.0, (bufferHeight - minSize)/ 2.0, minSize*scale, minSize*scale);
     } else {
-        boundingRect = CGRectMake(0, 0, bufferHeight*scale, bufferWidth*scale);
+        int minSize = MIN(bufferWidth, bufferHeight);
+        boundingRect = CGRectMake((bufferHeight - minSize)/ 2.0, (bufferWidth - minSize)/ 2.0, minSize*scale, minSize*scale);
     }
     videoImage = [temporaryContext createCGImage:ciImage fromRect:boundingRect];
     CGRect croppedSize = AVMakeRectWithAspectRatioInsideRect(previewSize, boundingRect);
