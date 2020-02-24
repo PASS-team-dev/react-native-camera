@@ -19,10 +19,12 @@ public class RNBarcodeDetector {
     private FirebaseVisionBarcodeDetector mBarcodeDetector = null;
     private FirebaseVisionBarcodeDetectorOptions.Builder  mBuilder;
 
-    private int mBarcodeType = FirebaseVisionBarcode.FORMAT_ALL_FORMATS;
+//    private int mBarcodeType = FirebaseVisionBarcode.FORMAT_ALL_FORMATS;
 
     public RNBarcodeDetector(Context context) {
-        mBuilder = new FirebaseVisionBarcodeDetectorOptions.Builder().setBarcodeFormats(mBarcodeType);
+        // set multiple format. it cannot be done by RNCamera interface...
+        mBuilder = new FirebaseVisionBarcodeDetectorOptions.Builder()
+                .setBarcodeFormats(FirebaseVisionBarcode.FORMAT_EAN_13, FirebaseVisionBarcode.FORMAT_EAN_8);
     }
 
     public boolean isOperational() {
@@ -39,11 +41,11 @@ public class RNBarcodeDetector {
     }
 
     public void setBarcodeType(int barcodeType) {
-        if (barcodeType != mBarcodeType) {
-            release();
-            mBuilder.setBarcodeFormats(barcodeType);
-            mBarcodeType = barcodeType;
-        }
+//        if (barcodeType != mBarcodeType) {
+//            release();
+//            mBuilder.setBarcodeFormats(barcodeType);
+//            mBarcodeType = barcodeType;
+//        }
     }
 
 
