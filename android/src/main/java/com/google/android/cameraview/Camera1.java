@@ -1003,29 +1003,13 @@ class Camera1 extends CameraViewImpl implements MediaRecorder.OnInfoListener,
 
     @SuppressWarnings("SuspiciousNameCombination")
     private Size chooseOptimalSize(SortedSet<Size> sizes) {
-        if (!mPreview.isReady()) { // Not yet laid out
-            return sizes.first(); // Return the smallest size
-        }
-        int desiredWidth;
-        int desiredHeight;
-        final int surfaceWidth = mPreview.getWidth();
-        final int surfaceHeight = mPreview.getHeight();
-        if (isLandscape(mDisplayOrientation)) {
-            desiredWidth = surfaceHeight;
-            desiredHeight = surfaceWidth;
-        } else {
-            desiredWidth = surfaceWidth;
-            desiredHeight = surfaceHeight;
-        }
-        Size result = null;
         for (Size size : sizes) { // Iterate from small to large
-            if (desiredWidth <= size.getWidth() && desiredHeight <= size.getHeight()) {
+            // choose FHD size of preview, or biggest size
+            if (size.getWidth() * size.getHeight() >= 1080 * 1920) {
                 return size;
-
             }
-            result = size;
         }
-        return result;
+        return sizes.last();
     }
 
     private void releaseCamera() {
