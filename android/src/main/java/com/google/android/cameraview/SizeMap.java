@@ -18,6 +18,7 @@ package com.google.android.cameraview;
 
 import androidx.collection.ArrayMap;
 
+import java.util.Comparator;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -48,7 +49,12 @@ class SizeMap {
             }
         }
         // None of the existing ratio matches the provided size; add a new key
-        SortedSet<Size> sizes = new TreeSet<>();
+        SortedSet<Size> sizes = new TreeSet<>(new Comparator<Size>() {
+            @Override
+            public int compare(Size o1, Size o2) {
+                return (o1.getWidth() * o1.getHeight()) - (o2.getWidth() * o2.getHeight());
+            }
+        });
         sizes.add(size);
         mRatios.put(AspectRatio.of(size.getWidth(), size.getHeight()), sizes);
         return true;
