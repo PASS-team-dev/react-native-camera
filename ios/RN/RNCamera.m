@@ -1578,6 +1578,10 @@ BOOL _sessionInterrupted = NO;
         }
         dispatch_async(self.sessionQueue, ^{
             if ([self.session canSetSessionPreset:preset]) {
+                if (self.session.sessionPreset == preset) {
+                    return;
+                }
+                
                 [self.session beginConfiguration];
                 self.session.sessionPreset = preset;
                 [self.session commitConfiguration];
@@ -1589,6 +1593,10 @@ BOOL _sessionInterrupted = NO;
             else{
                 RCTLog(@"The selected preset [%@] does not work with the current session.", preset);
                 if ([self.session canSetSessionPreset:AVCaptureSessionPreset1280x720]) {
+                    if (self.session.sessionPreset == AVCaptureSessionPreset1280x720) {
+                        return;
+                    }
+                    
                     [self.session beginConfiguration];
                     self.session.sessionPreset = AVCaptureSessionPreset1280x720;
                     [self.session commitConfiguration];
