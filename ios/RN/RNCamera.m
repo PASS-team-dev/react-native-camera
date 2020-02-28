@@ -1292,6 +1292,15 @@ BOOL _sessionInterrupted = NO;
             [self setupMovieFileCapture];
         }
         [self setupOrDisableBarcodeScanner];
+        
+        __weak RNCamera *weakSelf = self;
+        [self setRuntimeErrorHandlingObserver:[NSNotificationCenter.defaultCenter addObserverForName:AVCaptureSessionRuntimeErrorNotification object:self.session queue:nil usingBlock:^(NSNotification *note) {
+            RNCamera *strongSelf = weakSelf;
+            dispatch_async(strongSelf.sessionQueue, ^{
+                // Manually restarting the session since it must have been stopped due to an error.
+                [strongSelf.session startRunning];
+            });
+        }]];
 
         _sessionInterrupted = NO;
         [self.session startRunning];
