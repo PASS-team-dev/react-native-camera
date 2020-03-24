@@ -16,7 +16,11 @@
 {
   if (self = [super init]) {
     self.vision = [FIRVision vision];
-    self.barcodeRecognizer = [_vision barcodeDetector];
+    // it can read only EAN-13 and EAN-8 bacodes
+    self.setOption = FIRVisionBarcodeFormatEAN13 | FIRVisionBarcodeFormatEAN8;
+    FIRVisionBarcodeDetectorOptions *options =
+        [[FIRVisionBarcodeDetectorOptions alloc] initWithFormats: self.setOption];
+    self.barcodeRecognizer = [self.vision barcodeDetectorWithOptions:options];
   }
   return self;
 }
@@ -44,24 +48,6 @@
                 @"DATA_MATRIX" : @(FIRVisionBarcodeFormatDataMatrix),
                 @"ALL" : @(FIRVisionBarcodeFormatAll),
             };
-}
-
-- (void)setType:(id)json queue:(dispatch_queue_t)sessionQueue 
-{
-  // We want to set 2 types at the same time for general use
-  NSInteger requestedValue = FIRVisionBarcodeFormatEAN13 | FIRVisionBarcodeFormatEAN8;
-  if (self.setOption != requestedValue) {
-      if (sessionQueue) {
-          dispatch_async(sessionQueue, ^{
-              self.setOption = requestedValue;
-              FIRVisionBarcodeDetectorOptions *options =
-              [[FIRVisionBarcodeDetectorOptions alloc]
-              initWithFormats: requestedValue];
-              self.barcodeRecognizer =
-              [self.vision barcodeDetectorWithOptions:options];
-          });
-      }
-  }
 }
 
 - (void)findBarcodesInFrame:(UIImage *)uiImage
