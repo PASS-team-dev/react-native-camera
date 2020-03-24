@@ -2109,7 +2109,6 @@ BOOL _sessionInterrupted = NO;
 
 - (void)updateGoogleVisionBarcodeType:(id)requestedTypes
 {
-    [self.barcodeDetector setType:requestedTypes queue:self.sessionQueue];
 }
 
 - (void)onBarcodesDetected:(NSDictionary *)event
