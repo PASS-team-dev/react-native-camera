@@ -24,7 +24,7 @@ public class RNBarcodeDetector {
     public RNBarcodeDetector(Context context) {
         // set multiple format. it cannot be done by RNCamera interface...
         mBuilder = new FirebaseVisionBarcodeDetectorOptions.Builder()
-                .setBarcodeFormats(FirebaseVisionBarcode.FORMAT_EAN_13, FirebaseVisionBarcode.FORMAT_EAN_8);
+                .setBarcodeFormats(FirebaseVisionBarcode.FORMAT_EAN_13, FirebaseVisionBarcode.FORMAT_EAN_8, FirebaseVisionBarcode.FORMAT_QR_CODE);
     }
 
     public boolean isOperational() {

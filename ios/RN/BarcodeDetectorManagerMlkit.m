@@ -16,8 +16,8 @@
 {
   if (self = [super init]) {
     self.vision = [FIRVision vision];
-    // it can read only EAN-13 and EAN-8 bacodes
-    self.setOption = FIRVisionBarcodeFormatEAN13 | FIRVisionBarcodeFormatEAN8;
+    // it can read only EAN-13, EAN-8 and QR codes
+    self.setOption = FIRVisionBarcodeFormatEAN13 | FIRVisionBarcodeFormatEAN8 | FIRVisionBarcodeFormatQRCode;
     FIRVisionBarcodeDetectorOptions *options =
         [[FIRVisionBarcodeDetectorOptions alloc] initWithFormats: self.setOption];
     self.barcodeRecognizer = [self.vision barcodeDetectorWithOptions:options];
