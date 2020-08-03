@@ -2,6 +2,7 @@ package org.reactnative.camera.tasks;
 
 //import android.graphics.Point;
 import android.graphics.Rect;
+import android.util.Base64;
 import android.util.Log;
 
 import com.facebook.react.bridge.Arguments;
@@ -278,6 +279,7 @@ public class BarcodeDetectorAsyncTask extends android.os.AsyncTask<Void, Void, V
 
       serializedBarcode.putString("data", barcode.getDisplayValue());
       serializedBarcode.putString("dataRaw", rawValue);
+      serializedBarcode.putString("dataRawBytesBase64", Base64.encodeToString(barcode.getRawBytes(), Base64.DEFAULT));
       serializedBarcode.putString("type", BarcodeFormatUtils.get(valueType));
       serializedBarcode.putString("format", BarcodeFormatUtils.getFormat(valueFormat));
       serializedBarcode.putMap("bounds", processBounds(bounds));
