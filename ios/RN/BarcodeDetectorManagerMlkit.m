@@ -86,6 +86,7 @@
         NSString *displayValue = barcode.displayValue;
         [resultDict setObject:rawValue forKey:@"dataRaw"];
         [resultDict setObject:displayValue forKey:@"data"];
+        [resultDict setObject:[barcode.rawData base64EncodedStringWithOptions:0] forKey:@"dataRawBytesBase64"];
         
         FIRVisionBarcodeValueType valueType = barcode.valueType;
         [resultDict setObject:[self getType:barcode.valueType] forKey:@"type"];
