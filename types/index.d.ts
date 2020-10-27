@@ -257,6 +257,10 @@ export interface Barcode {
     size: Size;
     origin: Point;
   };
+  normalizedBounds?: {
+    size: Size;
+    origin: Point;
+  };
   data: string;
   dataRaw: string;
   dataRawBytesBase64: string;
