@@ -367,12 +367,12 @@ public class BarcodeDetectorAsyncTask extends android.os.AsyncTask<Void, Void, V
 
     y = y + mPaddingTop;
 
-    origin.putDouble("x", x / (float)mWidth);
-    origin.putDouble("y", y / (float)mHeight);
+    origin.putDouble("x", x / (float)mImageDimensions.getWidth());
+    origin.putDouble("y", y / (float)mImageDimensions.getHeight());
 
     WritableMap size = Arguments.createMap();
-    size.putDouble("width", frame.width() / (float)mWidth);
-    size.putDouble("height", frame.height() / (float)mHeight);
+    size.putDouble("width", frame.width() / (float)mImageDimensions.getWidth());
+    size.putDouble("height", frame.height() / (float)mImageDimensions.getHeight());
 
     WritableMap bounds = Arguments.createMap();
     bounds.putMap("origin", origin);
