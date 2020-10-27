@@ -64,12 +64,14 @@
             if (error != nil || barcodes == nil) {
                 completed(emptyResult);
             } else {
-                completed([self processBarcodes:barcodes]);
+                completed([self processBarcodes:barcodes imageWidth:uiImage.size.width imageHeight:uiImage.size.height]);
             }
         }];
 }
 
 - (NSArray *)processBarcodes:(NSArray *)barcodes
+                  imageWidth:(float)imageWidth
+                 imageHeight:(float)imageHeight
 {
     NSMutableArray *result = [[NSMutableArray alloc] init];
     for (FIRVisionBarcode *barcode in barcodes) {
@@ -78,6 +80,8 @@
         // Boundaries of a barcode in image
         NSDictionary *bounds = [self processBounds:barcode.frame];
         [resultDict setObject:bounds forKey:@"bounds"];
+        NSDictionary *nBounds = [self processNormalizedBounds:barcode.frame imageWidth:imageWidth imageHeight:imageHeight];
+        [resultDict setObject:nBounds forKey:@"normalizedBounds"];
         
         // TODO send points to javascript - implement on android at the same time
         // Point[] corners = barcode.getCornerPoints();
@@ -359,6 +363,20 @@
     return boundsDict;
 }
 
+- (NSDictionary *)processNormalizedBounds:(CGRect)bounds
+                               imageWidth:(float)imageWidth
+                              imageHeight:(float)imageHeight
+{
+    float width = bounds.size.width / imageWidth;
+    float height = bounds.size.height / imageHeight;
+    float originX = bounds.origin.x / imageWidth;
+    float originY = bounds.origin.y / imageHeight;
+    NSDictionary *boundsDict = @{
+                                 @"size" : @{@"width" : @(width), @"height" : @(height)},
+                                 @"origin" : @{@"x" : @(originX), @"y" : @(originY)}
+                                 };
+    return boundsDict;
+}
 
 - (NSDictionary *)processPoint:(FIRVisionPoint *)point 
 {

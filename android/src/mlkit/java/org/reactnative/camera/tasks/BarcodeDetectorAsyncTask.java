@@ -283,6 +283,7 @@ public class BarcodeDetectorAsyncTask extends android.os.AsyncTask<Void, Void, V
       serializedBarcode.putString("type", BarcodeFormatUtils.get(valueType));
       serializedBarcode.putString("format", BarcodeFormatUtils.getFormat(valueFormat));
       serializedBarcode.putMap("bounds", processBounds(bounds));
+      serializedBarcode.putMap("normalizedBounds", processNormalizedBounds(bounds));
       barcodesList.pushMap(serializedBarcode);
     }
 
@@ -346,6 +347,32 @@ public class BarcodeDetectorAsyncTask extends android.os.AsyncTask<Void, Void, V
     WritableMap size = Arguments.createMap();
     size.putDouble("width", frame.width() * mScaleX);
     size.putDouble("height", frame.height() * mScaleY);
+
+    WritableMap bounds = Arguments.createMap();
+    bounds.putMap("origin", origin);
+    bounds.putMap("size", size);
+    return bounds;
+  }
+
+  private WritableMap processNormalizedBounds(Rect frame) {
+    WritableMap origin = Arguments.createMap();
+    int x = frame.left;
+    int y = frame.top;
+
+    if (frame.left < mWidth / 2) {
+      x = x + mPaddingLeft / 2;
+    } else if (frame.left > mWidth /2) {
+      x = x - mPaddingLeft / 2;
+    }
+
+    y = y + mPaddingTop;
+
+    origin.putDouble("x", x / (float)mWidth);
+    origin.putDouble("y", y / (float)mHeight);
+
+    WritableMap size = Arguments.createMap();
+    size.putDouble("width", frame.width() / (float)mWidth);
+    size.putDouble("height", frame.height() / (float)mHeight);
 
     WritableMap bounds = Arguments.createMap();
     bounds.putMap("origin", origin);

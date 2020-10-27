@@ -137,6 +137,16 @@ type TrackedBarcodeFeature = {
       y: number,
     },
   },
+  normalizedBounds?: {
+    size: {
+      width: number,
+      height: number,
+    },
+    origin: {
+      x: number,
+      y: number,
+    },
+  },
   data: string,
   dataRaw: string,
   dataRawBytesBase64: string,
