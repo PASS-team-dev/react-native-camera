@@ -356,25 +356,25 @@ public class BarcodeDetectorAsyncTask extends android.os.AsyncTask<Void, Void, V
 
   private WritableMap processNormalizedBounds(Rect frame) {
     WritableMap origin = Arguments.createMap();
+    WritableMap size = Arguments.createMap();
+    WritableMap bounds = Arguments.createMap();
+    
     int x = frame.left;
     int y = frame.top;
 
-    if (frame.left < mWidth / 2) {
-      x = x + mPaddingLeft / 2;
-    } else if (frame.left > mWidth /2) {
-      x = x - mPaddingLeft / 2;
+    if (mImageDimensions.getWidth() < mImageDimensions.getHeight()) {
+      origin.putDouble("x", x / (float) mImageDimensions.getWidth());
+      origin.putDouble("y", y / (float) mImageDimensions.getHeight());
+
+      size.putDouble("width", frame.width() / (float) mImageDimensions.getWidth());
+      size.putDouble("height", frame.height() / (float) mImageDimensions.getHeight());
+    } else {
+      origin.putDouble("y", x / (float) mImageDimensions.getWidth());
+      origin.putDouble("x", y / (float) mImageDimensions.getHeight());
+
+      size.putDouble("height", frame.width() / (float) mImageDimensions.getWidth());
+      size.putDouble("width", frame.height() / (float) mImageDimensions.getHeight());
     }
-
-    y = y + mPaddingTop;
-
-    origin.putDouble("x", x / (float)mImageDimensions.getWidth());
-    origin.putDouble("y", y / (float)mImageDimensions.getHeight());
-
-    WritableMap size = Arguments.createMap();
-    size.putDouble("width", frame.width() / (float)mImageDimensions.getWidth());
-    size.putDouble("height", frame.height() / (float)mImageDimensions.getHeight());
-
-    WritableMap bounds = Arguments.createMap();
     bounds.putMap("origin", origin);
     bounds.putMap("size", size);
     return bounds;
