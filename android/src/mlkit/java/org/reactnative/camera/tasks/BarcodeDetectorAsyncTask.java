@@ -359,22 +359,37 @@ public class BarcodeDetectorAsyncTask extends android.os.AsyncTask<Void, Void, V
     WritableMap size = Arguments.createMap();
     WritableMap bounds = Arguments.createMap();
     
-    int x = frame.left;
-    int y = frame.top;
+    double x = frame.left / (double) mImageDimensions.getWidth();
+    double y = frame.top / (double) mImageDimensions.getHeight();
+    double width = frame.width() / (double) mImageDimensions.getWidth();
+    double height = frame.height() / (double) mImageDimensions.getHeight();
 
-    if (mImageDimensions.getWidth() < mImageDimensions.getHeight()) {
-      origin.putDouble("x", x / (float) mImageDimensions.getWidth());
-      origin.putDouble("y", y / (float) mImageDimensions.getHeight());
+    if (mRotation == 90) {
+      origin.putDouble("x", x);
+      origin.putDouble("y", y);
 
-      size.putDouble("width", frame.width() / (float) mImageDimensions.getWidth());
-      size.putDouble("height", frame.height() / (float) mImageDimensions.getHeight());
+      size.putDouble("width", width);
+      size.putDouble("height", height);
+    } else if (mRotation == 0) {
+      origin.putDouble("x", 1.0 - y);
+      origin.putDouble("y", x);
+
+      size.putDouble("width", height);
+      size.putDouble("height", width);
+    } else if (mRotation == 180) {
+      origin.putDouble("x", y);
+      origin.putDouble("y", 1.0 - x);
+
+      size.putDouble("width", height);
+      size.putDouble("height", width);
     } else {
-      origin.putDouble("y", x / (float) mImageDimensions.getWidth());
-      origin.putDouble("x", y / (float) mImageDimensions.getHeight());
+      origin.putDouble("x", 1.0 - x);
+      origin.putDouble("y", 1.0 - y);
 
-      size.putDouble("height", frame.width() / (float) mImageDimensions.getWidth());
-      size.putDouble("width", frame.height() / (float) mImageDimensions.getHeight());
+      size.putDouble("width", width);
+      size.putDouble("height", height);
     }
+
     bounds.putMap("origin", origin);
     bounds.putMap("size", size);
     return bounds;
