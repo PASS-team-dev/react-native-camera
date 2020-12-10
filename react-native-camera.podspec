@@ -40,8 +40,7 @@ Pod::Spec.new do |s|
   s.subspec "BarcodeDetectorMLKit" do |ss|
     ss.dependency 'react-native-camera/RN'
     ss.dependency 'react-native-camera/RCT'
-    ss.dependency 'Firebase/MLVision'
-    ss.dependency 'Firebase/MLVisionBarcodeModel'
+    ss.dependency 'GoogleMLKit/BarcodeScanning'
   end
 
   s.default_subspecs = "RN", "RCT"
