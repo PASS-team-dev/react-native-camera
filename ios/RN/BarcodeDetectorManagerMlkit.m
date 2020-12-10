@@ -1,31 +1,25 @@
 #import "BarcodeDetectorManagerMlkit.h"
 #import <React/RCTConvert.h>
-#if __has_include(<FirebaseMLVision/FirebaseMLVision.h>)
+#if __has_include(<MLKitBarcodeScanning/MLKitBarcodeScanning.h>)
 
 @interface BarcodeDetectorManagerMlkit ()
-@property(nonatomic, strong) FIRVisionBarcodeDetector *barcodeRecognizer;
-@property(nonatomic, strong) FIRVision *vision;
-@property(nonatomic, assign) FIRVisionBarcodeFormat setOption;
+@property(nonatomic, strong) MLKBarcodeScanner *barcodeRecognizer;
 @property(nonatomic, assign) float scaleX;
 @property(nonatomic, assign) float scaleY;
 @end
 
 @implementation BarcodeDetectorManagerMlkit
 
-- (instancetype)init 
+- (instancetype)init
 {
   if (self = [super init]) {
-    self.vision = [FIRVision vision];
-    // it can read only EAN-13, EAN-8 and QR codes
-    self.setOption = FIRVisionBarcodeFormatEAN13 | FIRVisionBarcodeFormatEAN8 | FIRVisionBarcodeFormatQRCode;
-    FIRVisionBarcodeDetectorOptions *options =
-        [[FIRVisionBarcodeDetectorOptions alloc] initWithFormats: self.setOption];
-    self.barcodeRecognizer = [self.vision barcodeDetectorWithOptions:options];
+    MLKBarcodeScannerOptions *options = [[MLKBarcodeScannerOptions alloc] initWithFormats: MLKBarcodeFormatEAN13 | MLKBarcodeFormatEAN8 | MLKBarcodeFormatQRCode];
+    self.barcodeRecognizer = [MLKBarcodeScanner barcodeScannerWithOptions: options];
   }
   return self;
 }
 
-- (BOOL)isRealDetector 
+- (BOOL)isRealDetector
 {
   return true;
 }
@@ -33,40 +27,39 @@
 + (NSDictionary *)constants
 {
     return @{
-                @"CODE_128" : @(FIRVisionBarcodeFormatCode128),
-                @"CODE_39" : @(FIRVisionBarcodeFormatCode39),
-                @"CODE_93" : @(FIRVisionBarcodeFormatCode93),
-                @"CODABAR" : @(FIRVisionBarcodeFormatCodaBar),
-                @"EAN_13" : @(FIRVisionBarcodeFormatEAN13),
-                @"EAN_8" : @(FIRVisionBarcodeFormatEAN8),
-                @"ITF" : @(FIRVisionBarcodeFormatITF),
-                @"UPC_A" : @(FIRVisionBarcodeFormatUPCA),
-                @"UPC_E" : @(FIRVisionBarcodeFormatUPCE),
-                @"QR_CODE" : @(FIRVisionBarcodeFormatQRCode),
-                @"PDF417" : @(FIRVisionBarcodeFormatPDF417),
-                @"AZTEC" : @(FIRVisionBarcodeFormatAztec),
-                @"DATA_MATRIX" : @(FIRVisionBarcodeFormatDataMatrix),
-                @"ALL" : @(FIRVisionBarcodeFormatAll),
+                @"CODE_128" : @(MLKBarcodeFormatCode128),
+                @"CODE_39" : @(MLKBarcodeFormatCode39),
+                @"CODE_93" : @(MLKBarcodeFormatCode93),
+                @"CODABAR" : @(MLKBarcodeFormatCodaBar),
+                @"EAN_13" : @(MLKBarcodeFormatEAN13),
+                @"EAN_8" : @(MLKBarcodeFormatEAN8),
+                @"ITF" : @(MLKBarcodeFormatITF),
+                @"UPC_A" : @(MLKBarcodeFormatUPCA),
+                @"UPC_E" : @(MLKBarcodeFormatUPCE),
+                @"QR_CODE" : @(MLKBarcodeFormatQRCode),
+                @"PDF417" : @(MLKBarcodeFormatPDF417),
+                @"AZTEC" : @(MLKBarcodeFormatAztec),
+                @"DATA_MATRIX" : @(MLKBarcodeFormatDataMatrix),
+                @"ALL" : @(MLKBarcodeFormatAll),
             };
 }
 
 - (void)findBarcodesInFrame:(UIImage *)uiImage
                   scaleX:(float)scaleX
                   scaleY:(float)scaleY
-               completed:(void (^)(NSArray *result))completed 
+               completed:(void (^)(NSArray *result))completed
 {
     self.scaleX = scaleX;
     self.scaleY = scaleY;
-    FIRVisionImage *image = [[FIRVisionImage alloc] initWithImage:uiImage];
+    MLKVisionImage *image = [[MLKVisionImage alloc] initWithImage:uiImage];
     NSMutableArray *emptyResult = [[NSMutableArray alloc] init];
-    [_barcodeRecognizer detectInImage:image
-        completion:^(NSArray<FIRVisionBarcode *> *barcodes, NSError *error) {
-            if (error != nil || barcodes == nil) {
-                completed(emptyResult);
-            } else {
-                completed([self processBarcodes:barcodes imageWidth:uiImage.size.width imageHeight:uiImage.size.height]);
-            }
-        }];
+    [_barcodeRecognizer processImage:image completion:^(NSArray<MLKBarcode *> *barcodes, NSError *error) {
+        if (error != nil || barcodes == nil) {
+            completed(emptyResult);
+        } else {
+            completed([self processBarcodes:barcodes imageWidth:uiImage.size.width imageHeight:uiImage.size.height]);
+        }
+    }];
 }
 
 - (NSArray *)processBarcodes:(NSArray *)barcodes
@@ -74,7 +67,7 @@
                  imageHeight:(float)imageHeight
 {
     NSMutableArray *result = [[NSMutableArray alloc] init];
-    for (FIRVisionBarcode *barcode in barcodes) {
+    for (MLKBarcode *barcode in barcodes) {
         NSMutableDictionary *resultDict =
         [[NSMutableDictionary alloc] initWithCapacity:20];
         // Boundaries of a barcode in image
@@ -92,24 +85,24 @@
         [resultDict setObject:displayValue forKey:@"data"];
         [resultDict setObject:[barcode.rawData base64EncodedStringWithOptions:0] forKey:@"dataRawBytesBase64"];
         
-        FIRVisionBarcodeValueType valueType = barcode.valueType;
+        MLKBarcodeValueType valueType = barcode.valueType;
         [resultDict setObject:[self getType:barcode.valueType] forKey:@"type"];
 
         switch (valueType) {
-            case FIRVisionBarcodeValueTypeWiFi:
+            case MLKBarcodeValueTypeWiFi:
                 if(barcode.wifi.ssid) {[resultDict setObject:barcode.wifi.ssid forKey:@"ssid"]; }
                 if(barcode.wifi.password) {[resultDict setObject:barcode.wifi.password forKey:@"password"]; }
                 if(barcode.wifi.type) {
                     NSString *encryptionTypeString = @"UNKNOWN";
                     int type = barcode.wifi.type;
                     switch (type) {
-                        case FIRVisionBarcodeWiFiEncryptionTypeWEP:
+                        case MLKBarcodeWiFiEncryptionTypeWEP:
                             encryptionTypeString = @"WEP";
                             break;
-                        case FIRVisionBarcodeWiFiEncryptionTypeWPA:
+                        case MLKBarcodeWiFiEncryptionTypeWPA:
                             encryptionTypeString = @"WPA";
                             break;
-                        case FIRVisionBarcodeWiFiEncryptionTypeOpen:
+                        case MLKBarcodeWiFiEncryptionTypeOpen:
                             encryptionTypeString = @"Open";
                             break;
                         default:
@@ -119,41 +112,41 @@
                     
                 }
                 break;
-            case FIRVisionBarcodeValueTypeURL:
+            case MLKBarcodeValueTypeURL:
                 if(barcode.URL.url) { [resultDict setObject:barcode.URL.url forKey:@"url"]; }
                 if(barcode.URL.title) { [resultDict setObject:barcode.URL.title forKey:@"title"]; }
                 break;
-            case FIRVisionBarcodeValueTypeContactInfo:
+            case MLKBarcodeValueTypeContactInfo:
                 if(barcode.contactInfo.addresses) {
                     NSMutableArray *addresses = [[NSMutableArray alloc] init];
-                    for (FIRVisionBarcodeAddress *address in barcode.contactInfo.addresses) {
+                    for (MLKBarcodeAddress *address in barcode.contactInfo.addresses) {
                         [addresses addObject:[self processAddress:address]];
                     }
                     [resultDict setObject:addresses forKey:@"addresses"];
                 }
                 if(barcode.contactInfo.emails) {
                     NSMutableArray *emails = [[NSMutableArray alloc] init];
-                    for (FIRVisionBarcodeEmail *email in barcode.contactInfo.emails) {
+                    for (MLKBarcodeEmail *email in barcode.contactInfo.emails) {
                         [emails addObject:[self processEmail:email]];
                     }
                     [resultDict setObject:emails forKey:@"emails"];
                 }
                 if(barcode.contactInfo.name) {
-                    FIRVisionBarcodePersonName *name = barcode.contactInfo.name;
+                    MLKBarcodePersonName *name = barcode.contactInfo.name;
                     NSObject *nameObject = @{
                                              @"formattedName" : name.formattedName ? name.formattedName : @"",
                                              @"firstName" : name.first ? name.first : @"",
                                              @"middleName" : name.middle ? name.middle : @"",
                                              @"lastName" : name.last ? name.last : @"",
                                              @"prefix" : name.prefix ? name.prefix : @"",
-                                             @"pronounciation" : name.pronounciation ? name.pronounciation : @"",
+                                             @"pronounciation" : name.pronunciation ? name.pronunciation : @"",
                                              @"suffix" : name.suffix ? name.suffix : @"",
                                              };
                     [resultDict setObject:nameObject forKey:@"name"];
                 }
                 if(barcode.contactInfo.phones) {
                     NSMutableArray *phones = [[NSMutableArray alloc] init];
-                    for (FIRVisionBarcodePhone *phone in barcode.contactInfo.phones) {
+                    for (MLKBarcodePhone *phone in barcode.contactInfo.phones) {
                         [phones addObject:[self processPhone:phone]];
                     }
                     [resultDict setObject:phones forKey:@"phones"];
@@ -162,15 +155,15 @@
                 if(barcode.contactInfo.urls) {[resultDict setObject:barcode.contactInfo.urls forKey:@"urls"]; }
                 if(barcode.contactInfo.organization) {[resultDict setObject:barcode.contactInfo.organization forKey:@"organization"]; }
                 break;
-            case FIRVisionBarcodeValueTypeSMS:
+            case MLKBarcodeValueTypeSMS:
                 if(barcode.sms.message) {[resultDict setObject:barcode.sms.message forKey:@"message"]; }
                 if(barcode.sms.phoneNumber) {[resultDict setObject:barcode.sms.phoneNumber forKey:@"phoneNumber"]; }
                 break;
-            case FIRVisionBarcodeValueTypeGeographicCoordinates:
+            case MLKBarcodeValueTypeGeographicCoordinates:
                 if(barcode.geoPoint.latitude) {[resultDict setObject:@(barcode.geoPoint.latitude) forKey:@"latitude"]; }
                 if(barcode.geoPoint.longitude) {[resultDict setObject:@(barcode.geoPoint.longitude) forKey:@"longitude"]; }
                 break;
-            case FIRVisionBarcodeValueTypeDriversLicense:
+            case MLKBarcodeValueTypeDriversLicense:
                 if(barcode.driverLicense.firstName) {[resultDict setObject:barcode.driverLicense.firstName forKey:@"firstName"]; }
                 if(barcode.driverLicense.middleName) {[resultDict setObject:barcode.driverLicense.middleName forKey:@"middleName"]; }
                 if(barcode.driverLicense.lastName) {[resultDict setObject:barcode.driverLicense.lastName forKey:@"lastName"]; }
@@ -186,7 +179,7 @@
                 if(barcode.driverLicense.issuingDate) {[resultDict setObject:barcode.driverLicense.issuingDate forKey:@"issuingDate"]; }
                 if(barcode.driverLicense.issuingCountry) {[resultDict setObject:barcode.driverLicense.issuingCountry forKey:@"issuingCountry"]; }
                 break;
-            case FIRVisionBarcodeValueTypeCalendarEvent:
+            case MLKBarcodeValueTypeCalendarEvent:
                 if(barcode.calendarEvent.eventDescription) {[resultDict setObject:barcode.calendarEvent.eventDescription forKey:@"eventDescription"]; }
                 if(barcode.calendarEvent.location) {[resultDict setObject:barcode.calendarEvent.location forKey:@"location"]; }
                 if(barcode.calendarEvent.organizer) {[resultDict setObject:barcode.calendarEvent.organizer forKey:@"organizer"]; }
@@ -199,13 +192,13 @@
                     [resultDict setObject:[self processDate:barcode.calendarEvent.end] forKey:@"end"];
                 }
                 break;
-            case FIRVisionBarcodeValueTypePhone:
+            case MLKBarcodeValueTypePhone:
                 if(barcode.phone.number) {[resultDict setObject:barcode.phone.number forKey:@"number"]; }
                 if(barcode.phone.type) {
                     [resultDict setObject:[self getPhoneType:barcode.phone.type] forKey:@"phoneType"];
                 }
                 break;
-            case FIRVisionBarcodeValueTypeEmail:
+            case MLKBarcodeValueTypeEmail:
                 if(barcode.email.address) {[resultDict setObject:barcode.email.address forKey:@"address"]; }
                 if(barcode.email.body) {[resultDict setObject:barcode.email.body forKey:@"body"]; }
                 if(barcode.email.subject) {[resultDict setObject:barcode.email.subject forKey:@"subject"]; }
@@ -223,37 +216,37 @@
 {
     NSString *barcodeType = @"UNKNOWN";
     switch (type) {
-        case FIRVisionBarcodeValueTypeEmail:
+        case MLKBarcodeValueTypeEmail:
             barcodeType = @"EMAIL";
             break;
-        case FIRVisionBarcodeValueTypePhone:
+        case MLKBarcodeValueTypePhone:
             barcodeType = @"PHONE";
             break;
-        case FIRVisionBarcodeValueTypeCalendarEvent:
+        case MLKBarcodeValueTypeCalendarEvent:
             barcodeType = @"CALENDAR_EVENT";
             break;
-        case FIRVisionBarcodeValueTypeDriversLicense:
+        case MLKBarcodeValueTypeDriversLicense:
             barcodeType = @"DRIVER_LICENSE";
             break;
-        case FIRVisionBarcodeValueTypeGeographicCoordinates:
+        case MLKBarcodeValueTypeGeographicCoordinates:
             barcodeType = @"GEO";
             break;
-        case FIRVisionBarcodeValueTypeSMS:
+        case MLKBarcodeValueTypeSMS:
             barcodeType = @"SMS";
             break;
-        case FIRVisionBarcodeValueTypeContactInfo:
+        case MLKBarcodeValueTypeContactInfo:
             barcodeType = @"CONTACT_INFO";
             break;
-        case FIRVisionBarcodeValueTypeWiFi:
+        case MLKBarcodeValueTypeWiFi:
             barcodeType = @"WIFI";
             break;
-        case FIRVisionBarcodeValueTypeText:
+        case MLKBarcodeValueTypeText:
             barcodeType = @"TEXT";
             break;
-        case FIRVisionBarcodeValueTypeISBN:
+        case MLKBarcodeValueTypeISBN:
             barcodeType = @"ISBN";
             break;
-        case FIRVisionBarcodeValueTypeProduct:
+        case MLKBarcodeValueTypeProduct:
             barcodeType = @"PRODUCT";
             break;
         default:
@@ -266,14 +259,14 @@
 {
     NSString *typeString = @"UNKNOWN";
     switch (type) {
-        case FIRVisionBarcodePhoneTypeFax:
+        case MLKBarcodePhoneTypeFax:
             typeString = @"Fax";
             break;
-        case FIRVisionBarcodePhoneTypeHome:
+        case MLKBarcodePhoneTypeHome:
             typeString = @"Home";
-        case FIRVisionBarcodePhoneTypeWork:
+        case MLKBarcodePhoneTypeWork:
             typeString = @"Work";
-        case FIRVisionBarcodePhoneTypeMobile:
+        case MLKBarcodePhoneTypeMobile:
             typeString = @"Mobile";
         default:
             break;
@@ -285,10 +278,10 @@
 {
     NSString *typeString = @"UNKNOWN";
     switch (type) {
-        case FIRVisionBarcodeEmailTypeWork:
+        case MLKBarcodeEmailTypeWork:
             typeString = @"Work";
             break;
-        case FIRVisionBarcodeEmailTypeHome:
+        case MLKBarcodeEmailTypeHome:
             typeString = @"Home";
         default:
             break;
@@ -296,7 +289,7 @@
     return typeString;
 }
 
-- (NSDictionary *)processPhone:(FIRVisionBarcodePhone *)phone
+- (NSDictionary *)processPhone:(MLKBarcodePhone *)phone
 {
     NSString *number = @"";
     NSString *typeString = @"UNKNOWN";
@@ -307,7 +300,7 @@
     return @{@"number" : number, @"phoneType" : typeString};
 }
 
-- (NSDictionary *)processAddress:(FIRVisionBarcodeAddress *)address
+- (NSDictionary *)processAddress:(MLKBarcodeAddress *)address
 {
     NSArray *addressLines = [[NSArray alloc] init];
     NSString *typeString = @"UNKNOWN";
@@ -315,10 +308,10 @@
         int type = address.type;
         NSString *typeString = @"UNKNOWN";
         switch (type) {
-            case FIRVisionBarcodeAddressTypeWork:
+            case MLKBarcodeAddressTypeWork:
                 typeString = @"Work";
                 break;
-            case FIRVisionBarcodeAddressTypeHome:
+            case MLKBarcodeAddressTypeHome:
                 typeString = @"Home";
             default:
                 break;
@@ -328,7 +321,7 @@
     return @{@"addressLines" : addressLines, @"addressType" : typeString};
 }
 
-- (NSDictionary *)processEmail:(FIRVisionBarcodeEmail *)email
+- (NSDictionary *)processEmail:(MLKBarcodeEmail *)email
 {
     NSString *subject = @"";
     NSString *address  =@"";
@@ -350,7 +343,7 @@
     return [dateFormatter stringFromDate:date];
 }
 
-- (NSDictionary *)processBounds:(CGRect)bounds 
+- (NSDictionary *)processBounds:(CGRect)bounds
 {
     float width = bounds.size.width * _scaleX;
     float height = bounds.size.height * _scaleY;
@@ -376,18 +369,6 @@
                                  @"origin" : @{@"x" : @(originX), @"y" : @(originY)}
                                  };
     return boundsDict;
-}
-
-- (NSDictionary *)processPoint:(FIRVisionPoint *)point 
-{
-    float originX = [point.x floatValue] * _scaleX;
-    float originY = [point.y floatValue] * _scaleY;
-    NSDictionary *pointDict = @{
-                                
-                                @"x" : @(originX),
-                                @"y" : @(originY)
-                                };
-    return pointDict;
 }
 
 @end

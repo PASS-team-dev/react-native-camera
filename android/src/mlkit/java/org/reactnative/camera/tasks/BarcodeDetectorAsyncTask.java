@@ -1,6 +1,5 @@
 package org.reactnative.camera.tasks;
 
-//import android.graphics.Point;
 import android.graphics.Rect;
 import android.util.Base64;
 import android.util.Log;
@@ -10,10 +9,9 @@ import com.facebook.react.bridge.WritableArray;
 import com.facebook.react.bridge.WritableMap;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.firebase.ml.vision.barcode.FirebaseVisionBarcode;
-import com.google.firebase.ml.vision.barcode.FirebaseVisionBarcodeDetector;
-import com.google.firebase.ml.vision.common.FirebaseVisionImage;
-import com.google.firebase.ml.vision.common.FirebaseVisionImageMetadata;
+import com.google.mlkit.vision.barcode.Barcode;
+import com.google.mlkit.vision.barcode.BarcodeScanner;
+import com.google.mlkit.vision.common.InputImage;
 
 import org.reactnative.barcodedetector.BarcodeFormatUtils;
 import org.reactnative.barcodedetector.RNBarcodeDetector;
@@ -37,18 +35,18 @@ public class BarcodeDetectorAsyncTask extends android.os.AsyncTask<Void, Void, V
   private String TAG = "RNCamera";
 
   public BarcodeDetectorAsyncTask(
-      BarcodeDetectorAsyncTaskDelegate delegate,
-      RNBarcodeDetector barcodeDetector,
-      byte[] imageData,
-      int width,
-      int height,
-      int rotation,
-      float density,
-      int facing,
-      int viewWidth,
-      int viewHeight,
-      int viewPaddingLeft,
-      int viewPaddingTop
+          BarcodeDetectorAsyncTaskDelegate delegate,
+          RNBarcodeDetector barcodeDetector,
+          byte[] imageData,
+          int width,
+          int height,
+          int rotation,
+          float density,
+          int facing,
+          int viewWidth,
+          int viewHeight,
+          int viewPaddingLeft,
+          int viewPaddingTop
   ) {
     mImageData = imageData;
     mWidth = width;
@@ -69,19 +67,14 @@ public class BarcodeDetectorAsyncTask extends android.os.AsyncTask<Void, Void, V
       return null;
     }
 
-    final FirebaseVisionImageMetadata metadata = new FirebaseVisionImageMetadata.Builder()
-            .setWidth(mWidth)
-            .setHeight(mHeight)
-            .setFormat(FirebaseVisionImageMetadata.IMAGE_FORMAT_YV12)
-            .setRotation(getFirebaseRotation())
-            .build();
-    FirebaseVisionImage image = FirebaseVisionImage.fromByteArray(mImageData, metadata);
+    InputImage image = InputImage.fromByteArray(mImageData, mWidth, mHeight, mRotation,
+            InputImage.IMAGE_FORMAT_YV12);
 
-    FirebaseVisionBarcodeDetector barcode = mBarcodeDetector.getDetector();
-    barcode.detectInImage(image)
-            .addOnSuccessListener(new OnSuccessListener<List<FirebaseVisionBarcode>>() {
+    BarcodeScanner barcode = mBarcodeDetector.getDetector();
+    barcode.process(image)
+            .addOnSuccessListener(new OnSuccessListener<List<Barcode>>() {
               @Override
-              public void onSuccess(List<FirebaseVisionBarcode> barcodes) {
+              public void onSuccess(List<Barcode> barcodes) {
                 WritableArray serializedBarcodes = serializeEventData(barcodes);
                 mDelegate.onBarcodesDetected(serializedBarcodes);
                 mDelegate.onBarcodeDetectingTaskCompleted();
@@ -97,33 +90,10 @@ public class BarcodeDetectorAsyncTask extends android.os.AsyncTask<Void, Void, V
     return null;
   }
 
-  private int getFirebaseRotation(){
-    int result;
-    switch (mRotation) {
-      case 0:
-        result = FirebaseVisionImageMetadata.ROTATION_0;
-        break;
-      case 90:
-        result = FirebaseVisionImageMetadata.ROTATION_90;
-        break;
-      case 180:
-        result = FirebaseVisionImageMetadata.ROTATION_180;
-        break;
-      case -90:
-        result = FirebaseVisionImageMetadata.ROTATION_270;
-        break;
-      default:
-        result = FirebaseVisionImageMetadata.ROTATION_0;
-        Log.e(TAG, "Bad rotation value: " + mRotation);
-    }
-    return result;
-  }
-
-
-  private WritableArray serializeEventData(List<FirebaseVisionBarcode> barcodes) {
+  private WritableArray serializeEventData(List<Barcode> barcodes) {
     WritableArray barcodesList = Arguments.createArray();
 
-    for (FirebaseVisionBarcode barcode: barcodes) {
+    for (Barcode barcode: barcodes) {
       // TODO implement position and data from all barcode types
       Rect bounds = barcode.getBoundingBox();
 //      Point[] corners = barcode.getCornerPoints();
@@ -136,19 +106,19 @@ public class BarcodeDetectorAsyncTask extends android.os.AsyncTask<Void, Void, V
       WritableMap serializedBarcode = Arguments.createMap();
 
       switch (valueType) {
-        case FirebaseVisionBarcode.TYPE_WIFI:
+        case Barcode.TYPE_WIFI:
           String ssid = barcode.getWifi().getSsid();
           String password = barcode.getWifi().getPassword();
           int type = barcode.getWifi().getEncryptionType();
           String typeString = "UNKNOWN";
           switch (type) {
-            case FirebaseVisionBarcode.WiFi.TYPE_OPEN:
+            case Barcode.WiFi.TYPE_OPEN:
               typeString = "Open";
               break;
-            case FirebaseVisionBarcode.WiFi.TYPE_WEP:
+            case Barcode.WiFi.TYPE_WEP:
               typeString = "WEP";
               break;
-            case FirebaseVisionBarcode.WiFi.TYPE_WPA:
+            case Barcode.WiFi.TYPE_WPA:
               typeString = "WPA";
               break;
           }
@@ -156,33 +126,33 @@ public class BarcodeDetectorAsyncTask extends android.os.AsyncTask<Void, Void, V
           serializedBarcode.putString("password", password);
           serializedBarcode.putString("ssid", ssid);
           break;
-        case FirebaseVisionBarcode.TYPE_URL:
+        case Barcode.TYPE_URL:
           String title = barcode.getUrl().getTitle();
           String url = barcode.getUrl().getUrl();
           serializedBarcode.putString("url", url);
           serializedBarcode.putString("title", title);
           break;
-        case FirebaseVisionBarcode.TYPE_SMS:
+        case Barcode.TYPE_SMS:
           String message = barcode.getSms().getMessage();
           String phoneNumber = barcode.getSms().getPhoneNumber();
           serializedBarcode.putString("message", message);
           serializedBarcode.putString("title", phoneNumber);
           break;
-        case FirebaseVisionBarcode.TYPE_PHONE:
+        case Barcode.TYPE_PHONE:
           String number = barcode.getPhone().getNumber();
           int typePhone = barcode.getPhone().getType();
           serializedBarcode.putString("number", number);
           String typeStringPhone = getPhoneType(typePhone);
           serializedBarcode.putString("phoneType", typeStringPhone);
           break;
-        case FirebaseVisionBarcode.TYPE_CALENDAR_EVENT:
+        case Barcode.TYPE_CALENDAR_EVENT:
           serializedBarcode.putString("description", barcode.getCalendarEvent().getDescription());
           serializedBarcode.putString("location", barcode.getCalendarEvent().getLocation());
           serializedBarcode.putString("organizer", barcode.getCalendarEvent().getOrganizer());
           serializedBarcode.putString("status", barcode.getCalendarEvent().getStatus());
           serializedBarcode.putString("summary", barcode.getCalendarEvent().getSummary());
-          FirebaseVisionBarcode.CalendarDateTime start = barcode.getCalendarEvent().getStart();
-          FirebaseVisionBarcode.CalendarDateTime end = barcode.getCalendarEvent().getEnd();
+          Barcode.CalendarDateTime start = barcode.getCalendarEvent().getStart();
+          Barcode.CalendarDateTime end = barcode.getCalendarEvent().getEnd();
           if (start != null) {
             serializedBarcode.putString("start", start.getRawValue());
           }
@@ -190,7 +160,7 @@ public class BarcodeDetectorAsyncTask extends android.os.AsyncTask<Void, Void, V
             serializedBarcode.putString("end", start.getRawValue());
           }
           break;
-        case FirebaseVisionBarcode.TYPE_DRIVER_LICENSE:
+        case Barcode.TYPE_DRIVER_LICENSE:
           serializedBarcode.putString("addressCity", barcode.getDriverLicense().getAddressCity());
           serializedBarcode.putString("addressState", barcode.getDriverLicense().getAddressState());
           serializedBarcode.putString("addressStreet", barcode.getDriverLicense().getAddressStreet());
@@ -206,14 +176,14 @@ public class BarcodeDetectorAsyncTask extends android.os.AsyncTask<Void, Void, V
           serializedBarcode.putString("issuingCountry", barcode.getDriverLicense().getIssuingCountry());
           serializedBarcode.putString("licenseNumber", barcode.getDriverLicense().getLicenseNumber());
           break;
-        case FirebaseVisionBarcode.TYPE_GEO:
+        case Barcode.TYPE_GEO:
           serializedBarcode.putDouble("latitude", barcode.getGeoPoint().getLat());
           serializedBarcode.putDouble("longitude", barcode.getGeoPoint().getLng());
           break;
-        case FirebaseVisionBarcode.TYPE_CONTACT_INFO:
+        case Barcode.TYPE_CONTACT_INFO:
           serializedBarcode.putString("organization", barcode.getContactInfo().getOrganization());
           serializedBarcode.putString("title", barcode.getContactInfo().getTitle());
-          FirebaseVisionBarcode.PersonName name = barcode.getContactInfo().getName();
+          Barcode.PersonName name = barcode.getContactInfo().getName();
           if (name != null) {
             serializedBarcode.putString("firstName", name.getFirst());
             serializedBarcode.putString("lastName", name.getLast());
@@ -223,18 +193,18 @@ public class BarcodeDetectorAsyncTask extends android.os.AsyncTask<Void, Void, V
             serializedBarcode.putString("pronunciation", name.getPronunciation());
             serializedBarcode.putString("suffix", name.getSuffix());
           }
-          List<FirebaseVisionBarcode.Phone> phones = barcode.getContactInfo().getPhones();
+          List<Barcode.Phone> phones = barcode.getContactInfo().getPhones();
           WritableArray phonesList = Arguments.createArray();
-          for (FirebaseVisionBarcode.Phone phone : phones) {
+          for (Barcode.Phone phone : phones) {
             WritableMap phoneObject = Arguments.createMap();
             phoneObject.putString("number", phone.getNumber());
             phoneObject.putString("phoneType", getPhoneType(phone.getType()));
             phonesList.pushMap(phoneObject);
           }
           serializedBarcode.putArray("phones", phonesList);
-          List<FirebaseVisionBarcode.Address> addresses = barcode.getContactInfo().getAddresses();
+          List<Barcode.Address> addresses = barcode.getContactInfo().getAddresses();
           WritableArray addressesList = Arguments.createArray();
-          for (FirebaseVisionBarcode.Address address : addresses) {
+          for (Barcode.Address address : addresses) {
             WritableMap addressesData = Arguments.createMap();
             WritableArray addressesLinesList = Arguments.createArray();
             String[] addressesLines = address.getAddressLines();
@@ -246,10 +216,10 @@ public class BarcodeDetectorAsyncTask extends android.os.AsyncTask<Void, Void, V
             int addressType = address.getType();
             String addressTypeString = "UNKNOWN";
             switch(addressType) {
-              case FirebaseVisionBarcode.Address.TYPE_WORK:
+              case Barcode.Address.TYPE_WORK:
                 addressTypeString = "Work";
                 break;
-              case FirebaseVisionBarcode.Address.TYPE_HOME:
+              case Barcode.Address.TYPE_HOME:
                 addressTypeString = "Home";
                 break;
             }
@@ -257,21 +227,21 @@ public class BarcodeDetectorAsyncTask extends android.os.AsyncTask<Void, Void, V
             addressesList.pushMap(addressesData);
           }
           serializedBarcode.putArray("addresses", addressesList);
-          List<FirebaseVisionBarcode.Email> emails = barcode.getContactInfo().getEmails();
+          List<Barcode.Email> emails = barcode.getContactInfo().getEmails();
           WritableArray emailsList = Arguments.createArray();
-          for (FirebaseVisionBarcode.Email email : emails) {
+          for (Barcode.Email email : emails) {
             WritableMap emailData = processEmail(email);
             emailsList.pushMap(emailData);
           }
           serializedBarcode.putArray("emails", emailsList);
-          String[] urls = barcode.getContactInfo().getUrls();
+          List<String> urls = barcode.getContactInfo().getUrls();
           WritableArray urlsList = Arguments.createArray();
           for (String urlContact : urls) {
             urlsList.pushString(urlContact);
           }
           serializedBarcode.putArray("urls", urlsList);
           break;
-        case FirebaseVisionBarcode.TYPE_EMAIL:
+        case Barcode.TYPE_EMAIL:
           WritableMap emailData = processEmail(barcode.getEmail());
           serializedBarcode.putMap("email", emailData);
           break;
@@ -290,7 +260,7 @@ public class BarcodeDetectorAsyncTask extends android.os.AsyncTask<Void, Void, V
     return barcodesList;
   }
 
-  private WritableMap processEmail(FirebaseVisionBarcode.Email email) {
+  private WritableMap processEmail(Barcode.Email email) {
     WritableMap emailData = Arguments.createMap();
     emailData.putString("address", email.getAddress());
     emailData.putString("body", email.getBody());
@@ -298,10 +268,10 @@ public class BarcodeDetectorAsyncTask extends android.os.AsyncTask<Void, Void, V
     int emailType = email.getType();
     String emailTypeString = "UNKNOWN";
     switch (emailType) {
-      case FirebaseVisionBarcode.Email.TYPE_WORK:
+      case Barcode.Email.TYPE_WORK:
         emailTypeString = "Work";
         break;
-      case FirebaseVisionBarcode.Email.TYPE_HOME:
+      case Barcode.Email.TYPE_HOME:
         emailTypeString = "Home";
         break;
     }
@@ -312,16 +282,16 @@ public class BarcodeDetectorAsyncTask extends android.os.AsyncTask<Void, Void, V
   private String getPhoneType(int typePhone) {
     String typeStringPhone = "UNKNOWN";
     switch(typePhone) {
-      case FirebaseVisionBarcode.Phone.TYPE_WORK:
+      case Barcode.Phone.TYPE_WORK:
         typeStringPhone = "Work";
         break;
-      case FirebaseVisionBarcode.Phone.TYPE_HOME:
+      case Barcode.Phone.TYPE_HOME:
         typeStringPhone = "Home";
         break;
-      case FirebaseVisionBarcode.Phone.TYPE_FAX:
+      case Barcode.Phone.TYPE_FAX:
         typeStringPhone = "Fax";
         break;
-      case FirebaseVisionBarcode.Phone.TYPE_MOBILE:
+      case Barcode.Phone.TYPE_MOBILE:
         typeStringPhone = "Mobile";
         break;
     }
@@ -358,7 +328,7 @@ public class BarcodeDetectorAsyncTask extends android.os.AsyncTask<Void, Void, V
     WritableMap origin = Arguments.createMap();
     WritableMap size = Arguments.createMap();
     WritableMap bounds = Arguments.createMap();
-    
+
     double x = frame.left / (double) mImageDimensions.getWidth();
     double y = frame.top / (double) mImageDimensions.getHeight();
     double width = frame.width() / (double) mImageDimensions.getWidth();
